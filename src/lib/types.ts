@@ -88,6 +88,16 @@ export type ActivityKind =
   | "escalation"
   | "stale_alert";
 
+export interface ImportLeadInput {
+  id: string;
+  name: string;
+  phone: string;
+  source: string;
+  budget: number;
+  moveInDate: string;
+  preferredArea: string;
+}
+
 export interface ActivityLog {
   id: string;
   ts: string;
