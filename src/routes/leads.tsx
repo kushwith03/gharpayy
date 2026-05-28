@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useApp } from "@/lib/store";
 import { ConfidenceBar, IntentChip, StageBadge } from "@/components/atoms";
@@ -9,7 +9,20 @@ import { formatDistanceToNow } from "date-fns";
 import type { LeadStage } from "@/lib/types";
 import { useMountedNow } from "@/hooks/use-now";
 
+type LeadSearch = {
+  q?: string;
+  stage?: string;
+  sortBy?: "confidence" | "moveIn" | "updated";
+};
+
 export const Route = createFileRoute("/leads")({
+  validateSearch: (search: Record<string, unknown>): LeadSearch => {
+    return {
+      q: (search.q as string) || "",
+      stage: (search.stage as string) || "all",
+      sortBy: (search.sortBy as "confidence" | "moveIn" | "updated") || "confidence",
+    };
+  },
   head: () => ({
     meta: [{ title: "Leads — Gharpayy" }, { name: "description", content: "Every lead, ranked by deal probability, one click into the control panel." }],
   }),
@@ -19,13 +32,13 @@ export const Route = createFileRoute("/leads")({
 function LeadsPage() {
   const { leads, tcms, selectLead } = useApp();
   const [, mounted] = useMountedNow();
-  const [q, setQ] = useState("");
-  const [stage, setStage] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"confidence" | "moveIn" | "updated">("confidence");
+  const { q, stage, sortBy } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const [localQ, setLocalQ] = useState(q);
 
   const filtered = useMemo(() => {
     const list = leads.filter((l) => {
-      if (q && !l.name.toLowerCase().includes(q.toLowerCase()) && !l.phone.includes(q)) return false;
+      if (localQ && !l.name.toLowerCase().includes(localQ.toLowerCase()) && !l.phone.includes(localQ)) return false;
       if (stage !== "all" && l.stage !== stage) return false;
       return true;
     });
@@ -35,7 +48,7 @@ function LeadsPage() {
       return +new Date(b.updatedAt) - +new Date(a.updatedAt);
     });
     return list;
-  }, [leads, q, stage, sortBy]);
+  }, [leads, localQ, stage, sortBy]);
 
   return (
     <AppShell>
@@ -46,8 +59,8 @@ function LeadsPage() {
             <p className="text-sm text-muted-foreground">{filtered.length} of {leads.length} · ranked by deal probability</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or phone…" className="h-9 w-56 text-sm" />
-            <Select value={stage} onValueChange={setStage}>
+            <Input value={localQ} onChange={(e) => setLocalQ(e.target.value)} placeholder="Search name or phone…" className="h-9 w-56 text-sm" />
+            <Select value={stage} onValueChange={(v) => navigate({ search: (prev) => ({ ...prev, stage: v }), replace: true })}>
               <SelectTrigger className="h-9 w-44 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All stages</SelectItem>
@@ -56,7 +69,7 @@ function LeadsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <Select value={sortBy} onValueChange={(v) => navigate({ search: (prev) => ({ ...prev, sortBy: v as typeof sortBy }), replace: true })}>
               <SelectTrigger className="h-9 w-44 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="confidence">Sort: Confidence</SelectItem>
