@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DirectLeadForm } from "@/components/leads/DirectLeadForm";
@@ -7,6 +7,7 @@ import { RequestAccessSheet } from "@/components/leads/RequestAccessSheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useIdentityStore } from "@/lib/lead-identity/store";
+import { useApp } from "@/lib/store";
 import { Shield, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/leads/add")({
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/leads/add")({
 
 function AddLeadPage() {
   const totalLeads = useIdentityStore((s) => s.leads.length);
+  const selectLead = useApp((s) => s.selectLead);
+  const navigate = useNavigate();
   const [quickAddOpen, setQuickAddOpen] = useState(true);
   return (
     <AppShell>
@@ -34,7 +37,7 @@ function AddLeadPage() {
           </div>
         </header>
 
-        <Tabs defaultValue="quick" className="space-y-4">
+        <Tabs defaultValue="single" className="space-y-4">
           <TabsList>
             <TabsTrigger value="quick">Quick Add</TabsTrigger>
             <TabsTrigger value="single">Single lead</TabsTrigger>
@@ -52,7 +55,14 @@ function AddLeadPage() {
               <Button onClick={() => setQuickAddOpen(true)} className="w-full">Open Quick Add</Button>
             </div>
           </TabsContent>
-          <TabsContent value="single"><DirectLeadForm /></TabsContent>
+          <TabsContent value="single">
+            <DirectLeadForm
+              onCreated={(l) => {
+                selectLead(l.ulid);
+                navigate({ to: "/leads" });
+              }}
+            />
+          </TabsContent>
           <TabsContent value="geo"><GeoIntelligenceGuide /></TabsContent>
           <TabsContent value="requests"><RequestAccessSheet /></TabsContent>
         </Tabs>

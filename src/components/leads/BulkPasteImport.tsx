@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { parseLead, splitLeads } from "@/lib/lead-identity/parser";
 import { useIdentityStore } from "@/lib/lead-identity/store";
+import { useApp } from "@/lib/store";
+import type { ImportLeadInput } from "@/lib/types";
 import type { MatchResult, ParsedLeadDraft } from "@/lib/lead-identity/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +25,7 @@ const matchColor = (t: MatchResult["type"]) =>
 export function BulkPasteImport() {
   const checkDuplicates = useIdentityStore((s) => s.checkDuplicates);
   const createLead = useIdentityStore((s) => s.createLead);
+  const importLead = useApp((s) => s.importLead);
   const [raw, setRaw] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
 
@@ -42,7 +45,19 @@ export function BulkPasteImport() {
     let created = 0;
     for (const r of rows) {
       if (!r.selected || r.match.type === "exact") continue;
-      createLead(r.draft);
+      const lead = createLead(r.draft);
+      
+      const opInput: ImportLeadInput = {
+        id: lead.ulid,
+        name: lead.name,
+        phone: lead.phoneRaw,
+        source: lead.rawSource || "Bulk Paste",
+        budget: lead.budget,
+        moveInDate: lead.moveInDate,
+        preferredArea: lead.area,
+      };
+      importLead(opInput);
+      
       created++;
     }
     toast.success(`Imported ${created} leads`);

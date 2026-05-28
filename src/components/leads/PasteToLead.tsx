@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { parseLead, detectZone } from "@/lib/lead-identity/parser";
+import { detectZone, parseLead } from "@/lib/lead-identity/parser";
 import { useIdentityStore } from "@/lib/lead-identity/store";
+import { useApp } from "@/lib/store";
+import type { ImportLeadInput } from "@/lib/types";
 import type { MatchResult, ParsedLeadDraft, UnifiedLead } from "@/lib/lead-identity/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +26,7 @@ const emptyDraft = (): ParsedLeadDraft => ({
 export function PasteToLead({ onCreated }: Props) {
   const checkDuplicates = useIdentityStore((s) => s.checkDuplicates);
   const createLead = useIdentityStore((s) => s.createLead);
-
+  const importLead = useApp((s) => s.importLead);
   const [raw, setRaw] = useState("");
   const [draft, setDraft] = useState<ParsedLeadDraft>(emptyDraft());
   const [parsed, setParsed] = useState(false);

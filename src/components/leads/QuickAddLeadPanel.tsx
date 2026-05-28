@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useIdentityStore } from "@/lib/lead-identity/store";
+import { useApp } from "@/lib/store";
+import type { ImportLeadInput } from "@/lib/types";
 import { detectZone, parseLead } from "@/lib/lead-identity/parser";
 import { teamMembers } from "@/myt/lib/mock-data";
 import { toast } from "sonner";
@@ -68,6 +70,7 @@ const BLR_OPTS = [
 export function QuickAddLeadPanel({ open, onClose }: Props) {
   const checkDup = useIdentityStore((s) => s.checkDuplicates);
   const create = useIdentityStore((s) => s.createLead);
+  const importLead = useApp((s) => s.importLead);
   const { rooms, blocks, tours } = useAppState();
   const navigate = useNavigate();
 
@@ -206,6 +209,19 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
         assigneeName: assignee?.name ?? null,
       },
     );
+
+    // Bridge to operational CRM
+    const opInput: ImportLeadInput = {
+      id: lead.ulid,
+      name: lead.name,
+      phone: lead.phoneRaw,
+      source: lead.rawSource || "Quick Add",
+      budget: lead.budget,
+      moveInDate: lead.moveInDate,
+      preferredArea: lead.area,
+    };
+    importLead(opInput);
+
     toast.success(`Lead saved · ${lead.name}`);
     if (keepOpen) reset(); else onClose();
   };

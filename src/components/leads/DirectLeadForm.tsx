@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { detectZone } from "@/lib/lead-identity/parser";
 import { useIdentityStore } from "@/lib/lead-identity/store";
+import { useApp } from "@/lib/store";
+import type { ImportLeadInput } from "@/lib/types";
 import type { MatchResult, ParsedLeadDraft, UnifiedLead } from "@/lib/lead-identity/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,8 @@ const emailOk = (v: string) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 export function DirectLeadForm({ onCreated }: Props) {
   const checkDuplicates = useIdentityStore((s) => s.checkDuplicates);
   const createLead = useIdentityStore((s) => s.createLead);
+
+  const importLead = useApp((s) => s.importLead);
 
   const [draft, setDraft] = useState<ParsedLeadDraft>(emptyDraft());
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -86,6 +90,19 @@ export function DirectLeadForm({ onCreated }: Props) {
 
   const onForceCreate = () => {
     const lead = createLead(draft);
+
+    // Bridge to operational CRM
+    const opInput: ImportLeadInput = {
+      id: lead.ulid,
+      name: lead.name,
+      phone: lead.phoneRaw,
+      source: lead.rawSource || "Direct Entry",
+      budget: lead.budget,
+      moveInDate: lead.moveInDate,
+      preferredArea: lead.area,
+    };
+    importLead(opInput);
+
     toast.success(`Lead created · ULID ${lead.ulid.slice(0, 12)}…`);
     setShowModal(false);
     setDraft(emptyDraft());
